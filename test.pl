@@ -1,16 +1,13 @@
 # ===========================================================================
 # test.pl - version 0.01 - 06/11/1999
+# $Id: test.pl,v 1.1 2000/01/26 06:08:36 guy Exp $
 # Test suite for Mail::Ezmlm
 #
 # Copyright (C) 1999, Guy Antony Halse, All Rights Reserved.
 # Please send bug reports and comments to guy-ezmlm@rucus.ru.ac.za
 #
-# This program is free for non-commercial use; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License (version 2 or 
-# later) as published by the Free Software Foundation. This program is 
-# distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A 
-# PARTICULAR PURPOSE.  See the GNU General Public License for more details. 
+# This program is subject to the restrictions set out in the copyright
+# agreement that can be found in the Ezmlm.pm file in this distribution
 #
 # ==========================================================================
 # Before `make install' is performed this script should be runnable with
@@ -20,7 +17,7 @@
 
 $failed = 0;
 
-BEGIN { $| = 1; print "1..8\n"; }
+BEGIN { $| = 1; print "1..9\n"; }
 END {($failed++ && print "not ok 1\n") unless $loaded;}
 use Mail::Ezmlm;
 $loaded = 1;
@@ -46,7 +43,7 @@ $test1 = $list->make(-name=>"ezmlm-test1-$$",
 if($test1 eq "$TMP/ezmlm-test1-$$") {
    print "ok 2\n";
 } else {
-   print "not ok 2\n";
+   print 'not ok 2 [', $list->errmsg(), "]\n";
    $failed++;
 }
 
@@ -63,11 +60,11 @@ if($test2 eq "$TMP/ezmlm-test2-$$") {
    if($test2 eq "onwebza-ezmlm-test2-$$") {
       print "ok 3\n";
    } else {
-      print "not ok 3\n";
+      print 'not ok 3 [', $list->errmsg(), "]\n";
       $failed++;
    }
 } else {
-   print "not ok 3\n";
+   print 'not ok 3 [', $list->errmsg(), "]\n";
    $failed++;
 }
 
@@ -75,7 +72,7 @@ print 'Testing list update: ';
 if($list->update('ms')) {
    print "ok 4\n";
 } else {
-   print "not ok 4\n";
+   print 'not ok 4 [', $list->errmsg(), "]\n";
    $failed++;
 }
 
@@ -84,7 +81,7 @@ $list->setlist("$TMP/ezmlm-test1-$$");
 if($list->thislist eq "$TMP/ezmlm-test1-$$") {
    print "ok 5\n";
 } else {
-   print "not ok 5\n";
+   print 'not ok 5 [', $list->errmsg(), "]\n";
    $failed++;
 }
 
@@ -95,7 +92,7 @@ $list->sub('anonymous@on.web.za', 'test@on.web.za');
 if($subscribers[1] =~ /nobody\@on.web.za/) {
    print "ok 6\n";
 } else {
-   print "not ok 6\n";
+   print 'not ok 6 [', $list->errmsg(), "]\n";
    $failed++;
 }
 
@@ -103,7 +100,7 @@ print 'Testing issub(): ';
 if(defined($list->issub('nobody@on.web.za'))) {
    print "ok 7\n";
 } else {
-   print "not ok 7\n";
+   print 'not ok 7 [', $list->errmsg(), "]\n";
    $failed++;
 }
 
@@ -114,8 +111,16 @@ $list->unsub('anonymous@on.web.za', 'test@on.web.za');
 unless(@subscribers) {
    print "ok 8\n";
 } else {
-   print "not ok 8\n";
+   print 'not ok 8 [', $list->errmsg(), "]\n";
    $failed++;
+}
+
+print 'Testing installed version of ezmlm: ';
+my($version) = $list->check_version();
+if ($version) {
+   print 'not ok 9 [', $version, "]\n";
+} else {
+   print "ok 9\n";
 }
 
 if($failed > 0) {

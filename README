@@ -1,3 +1,5 @@
+$Id: README,v 1.1 2000/01/26 06:08:13 guy Exp $
+
 Ezmlm.pm
 
 Object methods for ezmlm mailing lists.
@@ -10,8 +12,8 @@ apart from me think this is a good idea??
 
 Install by doing the following ...
 # perl Makefile.PL
-# make install
 # make test
+# make install
 
 One thing. For some reason MakeMaker doesn't like symlinks. Please make sure
 you use the full cantonical path for the qmail and ezmlm binaries.

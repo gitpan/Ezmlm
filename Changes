@@ -1,5 +1,15 @@
+$Id: Changes,v 1.1 2000/01/26 06:06:16 guy Exp $
+
 Revision history for Perl extension Mail::Ezmlm.
 
 0.01  Sun Oct 31 12:58:16 1999
-	- original version; created by h2xs 1.1.1.1.2.1
+   - original version; created by h2xs 1.1.1.1.2.1
 
+0.02  Wed Jan 26 07:59:10 SAST 2000
+   - Added functions to check various options
+      (ismodsub, ismodpost, isremote, isdeny, isallow, isdigest)
+   - Allowed sub, unsub, list, subscribers, issub to work with list subparts
+      (ie, the allow, deny, mod, digest sub directories)
+   - Changed system() calls to safer ones (ie command, switches)
+   - Made error handling better (errmsg() and errno())
+   - Added support for creating MySQL tables via ezmlm-mktab

@@ -1,3 +1,5 @@
+# $Id: Makefile.PL,v 1.1 2000/01/26 06:07:42 guy Exp $
+
 use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
@@ -33,7 +35,7 @@ EOM
       print "I can't find $ezmlm_path/ezmlm-make. Please try again\n";
    }
 
-print << 'EOM';
+	print << 'EOM';
 
 Now I need to know where Qmail resides on your system. The Qmail base 
 directory is the one in which the Qmail bin, control, etc directories
@@ -46,6 +48,29 @@ EOM
       last if (-d "$qmail_path/control");
       print "I can't find $qmail_path/control. Please try again\n";   
    }
+
+	if(`strings $ezmlm_path/ezmlm-sub | grep -i 'MySQL'`) {
+
+		print << 'EOM';
+
+It appears you have compiled MySQL support into your versiion of Ezmlm. If
+this is correct, I now need to know where the MySQL client (mysql) lives on
+your machine.
+
+Please leave this blank if you do not want to enable MySQL support in the
+Mail::Ezmlm module.
+
+EOM
+
+		while(1) {
+			$mysql_path = prompt('MySQL binary directory?', '');
+			last if (-e "$mysql_path/mysql" || $mysql_path eq '');
+			print "I can't find $mysql_path/mysql. Please enter the full path\n";
+			print "or leave this option blank if you don't want to use MySQL\n";
+		}
+
+	}
+
 
    print << 'EOM';
 
@@ -65,7 +90,8 @@ EOM
    while(<TMP>) {
       s{^\$EZMLM_BASE\s*=\s*['"].+?['"]\s*;}{\$EZMLM_BASE = '$ezmlm_path'; #Autoinserted by Makefile.PL};
       s{^\$QMAIL_BASE\s*=\s*['"].+?['"]\s*;}{\$QMAIL_BASE = '$qmail_path'; #Autoinserted by Makefile.PL}; 
-      print EZMLM;
+		s{^\$MYSQL_BASE\s*=\s*['"].*?['"]\s*;}{\$MYSQL_BASE = '$mysql_path'; #Autoinserted by Makefile.PL}; 
+     print EZMLM;
    }
    close TMP; close EZMLM;
 
