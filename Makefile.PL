@@ -16,7 +16,10 @@ sub set_paths {
    my($qmail_path, $ezmlm_path);
 
    # special case to handle the FreeBSD ports system
-   return if $ENV{BSD_BATCH_INSTALL};
+   if ($ENV{BSD_BATCH_INSTALL}) {
+      print STDERR "\$BSD_BATCH_INSTALL is set in your environment, assuming port defaults\n";
+      return {};
+   }
 
    print << 'EOM';
 
@@ -32,10 +35,14 @@ EOM
 
    *prompt = \&ExtUtils::MakeMaker::prompt;
 
-   while(1) {
+   foreach (1..10) {
       $ezmlm_path = prompt('Ezmlm binary directory?', '/usr/local/bin');
       last if (-e "$ezmlm_path/ezmlm-make");
       print "I can't find $ezmlm_path/ezmlm-make. Please try again\n";
+      if ($_ >= 10) {
+         print STDERR "No correct input after $_ attempts.  Exiting Makefile.PL.\n";
+         exit (2);
+      }
    }
 
    print << 'EOM';
@@ -46,10 +53,14 @@ live in.
 
 EOM
 
-   while (1) {
+   foreach (1..10) {
       $qmail_path = prompt('Qmail base directory?', '/var/qmail');
       last if (-d "$qmail_path/control");
       print "I can't find $qmail_path/control. Please try again\n";   
+      if ($_ >= 10) {
+         print STDERR "No correct input after $_ attempts.  Exiting Makefile.PL.\n";
+         exit (2);
+      }
    }
 
    if(`strings $ezmlm_path/ezmlm-sub | grep -i 'MySQL'`) {
@@ -65,15 +76,18 @@ Mail::Ezmlm module.
 
 EOM
 
-      while(1) {
+      foreach (1..10) {
          $mysql_path = prompt('MySQL binary directory?', '');
          last if (-e "$mysql_path/mysql" || $mysql_path eq '');
          print "I can't find $mysql_path/mysql. Please enter the full path\n";
          print "or leave this option blank if you don't want to use MySQL\n";
+         if ($_ >= 10) {
+            print STDERR "No correct input after $_ attempts.  Exiting Makefile.PL.\n";
+            exit (2);
+         }
       }
 
    }
-
 
    print << 'EOM';
 

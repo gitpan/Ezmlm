@@ -29,4 +29,5 @@ Revision history for Perl extension Mail::Ezmlm.
    - fixed handling of dashes in hostnames (bug 5571; Lars Braeuer <lbraeuer@mpex.net>)
    - fixed some tainting problems (Scott Beck <sbeck@gossamer-threads.com> and Matt Simerson <matt@tnpi.biz>)
    - fixed order of control/defaulthost and control/me (bug 1515)
+   - fixed a bug in Makefile.PL (bug 11771).  does not affect most users, so released as 0.05.1
 	

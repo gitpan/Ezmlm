@@ -56,9 +56,9 @@ $VERSION = '0.05';
 require 5.005;
 
 # == Begin site dependant variables ==
-$EZMLM_BASE = '/usr/local/bin'; 
-$QMAIL_BASE = '/var/qmail'; 
-$MYSQL_BASE = ''; 
+$EZMLM_BASE = '/usr/local/bin'; #Autoinserted by Makefile.PL 
+$QMAIL_BASE = '/var/qmail'; #Autoinserted by Makefile.PL 
+$MYSQL_BASE = ''; #Autoinserted by Makefile.PL 
 # == End site dependant variables ==
 
 use Carp;
