@@ -1,4 +1,4 @@
-$Id: Changes,v 1.1 2000/01/26 06:06:16 guy Exp $
+$Id: Changes,v 1.2 2000/09/25 09:55:35 guy Exp $
 
 Revision history for Perl extension Mail::Ezmlm.
 
@@ -13,3 +13,7 @@ Revision history for Perl extension Mail::Ezmlm.
    - Changed system() calls to safer ones (ie command, switches)
    - Made error handling better (errmsg() and errno())
    - Added support for creating MySQL tables via ezmlm-mktab
+
+0.03 Mon Sep 25 11:49:26 SAST 2000
+   - fixed the issub() function
+   - hopefully got rid of some of the warnings from sub() and unsub()

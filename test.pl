@@ -1,6 +1,6 @@
 # ===========================================================================
-# test.pl - version 0.01 - 06/11/1999
-# $Id: test.pl,v 1.1 2000/01/26 06:08:36 guy Exp $
+# test.pl - version 0.02 - 25/09/2000
+# $Id: test.pl,v 1.3 2000/09/25 09:56:37 guy Exp $
 # Test suite for Mail::Ezmlm
 #
 # Copyright (C) 1999, Guy Antony Halse, All Rights Reserved.
@@ -98,7 +98,12 @@ if($subscribers[1] =~ /nobody\@on.web.za/) {
 
 print 'Testing issub(): ';
 if(defined($list->issub('nobody@on.web.za'))) {
-   print "ok 7\n";
+   if(defined($list->issub('some@non.existant.address'))) {
+      print 'not ok 7 [', $list->errmsg(), "]\n";
+      $failed++;
+   } else {
+      print "ok 7\n";
+   }
 } else {
    print 'not ok 7 [', $list->errmsg(), "]\n";
    $failed++;

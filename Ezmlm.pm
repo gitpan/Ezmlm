@@ -1,6 +1,6 @@
 # ===========================================================================
-# Ezmlm.pm - version 0.02 - 01/01/2000
-# $Id: Ezmlm.pm,v 1.1 2000/01/26 06:07:14 guy Exp $
+# Ezmlm.pm - version 0.03 - 25/09/2000
+# $Id: Ezmlm.pm,v 1.4 2000/09/25 09:53:54 guy Exp $
 #
 # Object methods for ezmlm mailing lists
 #
@@ -51,7 +51,7 @@ require Exporter;
 @EXPORT = qw(
    
 );
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 require 5.002;
 
@@ -257,7 +257,7 @@ sub subscribers {
 # == Subscribe users to the current list ==
 sub sub {
    my($self, @addresses) = @_;
-   my($part) = pop @addresses unless $addresses[$#addresses] =~ /\@/;
+   my($part) = pop @addresses unless ($addresses[$#addresses] =~ /\@/ or $#addresses < 2);
    my($address); 
    (_seterror(-1, 'must setlist() before sub()') && return 0) unless(defined($LIST_NAME));
 
@@ -282,7 +282,7 @@ sub sub {
 # == Unsubscribe users from a list == 
 sub unsub {
    my($self, @addresses) = @_;
-   my($part) = pop @addresses unless $addresses[$#addresses] =~ /\@/;
+   my($part) = pop @addresses unless ($addresses[$#addresses] =~ /\@/ or $#addresses < 2);
    my($address); 
    (_seterror(-1, 'must setlist() before unsub()') && return 0) unless(defined($LIST_NAME));
 
@@ -310,14 +310,18 @@ sub issub {
    my($address, $issub); $issub = 1; 
    (_seterror(-1, 'must setlist() before issub()') && return 0) unless(defined($LIST_NAME));
 
+	local $ENV{'SENDER'};
+
    if(defined($part) && $part) {
       (_seterror(-1, "$part of $LIST_NAME does not appear to exist in issub()") && return 0) unless(-e "$LIST_NAME/$part");
       foreach $address (@addresses) {
-         undef($issub) if ((system("$EZMLM_BASE/ezmlm-issub", "$LIST_NAME/$part", $address) / 256) == 1)
+			$ENV{'SENDER'} = $address;
+         undef($issub) if ((system("$EZMLM_BASE/ezmlm-issubn", "$LIST_NAME/$part") / 256) != 0)
       }   
    } else {
       foreach $address (@addresses) {
-         undef($issub) if ((system("$EZMLM_BASE/ezmlm-issub", $LIST_NAME, $address) / 256) == 1)
+			$ENV{'SENDER'} = $address;
+         undef($issub) if ((system("$EZMLM_BASE/ezmlm-issubn", $LIST_NAME) / 256) != 0)
       }   
    }
 
