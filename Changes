@@ -1,4 +1,4 @@
-$Id: Changes,v 1.2 2000/09/25 09:55:35 guy Exp $
+$Id: Changes,v 1.3 2000/09/25 17:33:28 guy Exp $
 
 Revision history for Perl extension Mail::Ezmlm.
 
@@ -16,4 +16,5 @@ Revision history for Perl extension Mail::Ezmlm.
 
 0.03 Mon Sep 25 11:49:26 SAST 2000
    - fixed the issub() function
+	- fixed the problem with dashes in hostnames.
    - hopefully got rid of some of the warnings from sub() and unsub()

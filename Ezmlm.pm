@@ -1,6 +1,6 @@
 # ===========================================================================
 # Ezmlm.pm - version 0.03 - 25/09/2000
-# $Id: Ezmlm.pm,v 1.4 2000/09/25 09:53:54 guy Exp $
+# $Id: Ezmlm.pm,v 1.7 2000/09/25 17:29:07 guy Exp $
 #
 # Object methods for ezmlm mailing lists
 #
@@ -257,7 +257,8 @@ sub subscribers {
 # == Subscribe users to the current list ==
 sub sub {
    my($self, @addresses) = @_;
-   my($part) = pop @addresses unless ($addresses[$#addresses] =~ /\@/ or $#addresses < 2);
+   (_seterror(-1, 'sub() must be called with at least one address') && return 0) unless @addresses;
+   my($part) = pop @addresses unless ($#addresses < 1 or $addresses[$#addresses] =~ /\@/);
    my($address); 
    (_seterror(-1, 'must setlist() before sub()') && return 0) unless(defined($LIST_NAME));
 
@@ -275,14 +276,15 @@ sub sub {
             (_seterror($?) && return undef);
       }
    }
-   _seterror($?);
+   _seterror(undef);
    return 1;
 }
 
 # == Unsubscribe users from a list == 
 sub unsub {
    my($self, @addresses) = @_;
-   my($part) = pop @addresses unless ($addresses[$#addresses] =~ /\@/ or $#addresses < 2);
+   (_seterror(-1, 'unsub() must be called with at least one address') && return 0) unless @addresses;
+   my($part) = pop @addresses unless ($#addresses < 1 or $addresses[$#addresses] =~ /\@/);
    my($address); 
    (_seterror(-1, 'must setlist() before unsub()') && return 0) unless(defined($LIST_NAME));
 
@@ -488,7 +490,8 @@ sub _seterror {
 # == Internal function to test for valid email addresses ==
 sub _checkaddress {
    my($self, $address) = @_;
-   return 0 unless($address =~ /^\S+\@\w+\.\S+$/);
+	return 1 unless defined($address);
+   return 0 unless($address =~ /^\S+\@\S+\.\S+$/);
    return 1;
 }
 
