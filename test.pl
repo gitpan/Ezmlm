@@ -1,6 +1,6 @@
 # ===========================================================================
 # test.pl - version 0.02 - 25/09/2000
-# $Id: test.pl,v 1.3 2000/09/25 09:56:37 guy Exp $
+# $Id: test.pl,v 1.4 2003/05/26 17:35:09 guy Exp $
 # Test suite for Mail::Ezmlm
 #
 # Copyright (C) 1999, Guy Antony Halse, All Rights Reserved.
@@ -123,7 +123,8 @@ unless(@subscribers) {
 print 'Testing installed version of ezmlm: ';
 my($version) = $list->check_version();
 if ($version) {
-   print 'not ok 9 [', $version, "]\n";
+   $version =~ s/\n//;
+   print 'not ok 9 [Ezmlm.pm is designed to work with ezmlm-idx > 0.40.  Your version reports as: ', $version, "]\n";
 } else {
    print "ok 9\n";
 }

@@ -1,11 +1,11 @@
-$Id: README,v 1.1 2000/01/26 06:08:13 guy Exp $
+$Id: README,v 1.2 2003/05/26 17:36:37 guy Exp $
 
 Ezmlm.pm
 
 Object methods for ezmlm mailing lists.
 
-This software is beta release. As such, please treat it with the appropriate 
-amount of caution. Let me know if you find any bugs, etc.
+This software is *still* a beta release. As such, please treat it with the
+appropriate amount of caution. Let me know if you find any bugs, etc.
 
 The main reason for release is to sort of 'test the waters' ... Does anyone
 apart from me think this is a good idea??

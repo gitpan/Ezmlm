@@ -1,4 +1,4 @@
-# $Id: Makefile.PL,v 1.1 2000/01/26 06:07:42 guy Exp $
+# $Id: Makefile.PL,v 1.2 2003/05/26 17:37:04 guy Exp $
 
 use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
@@ -97,6 +97,6 @@ EOM
 
    unlink "Ezmlm.pm.tmp.$$";
 
-   return;
+   return {};
 
 }

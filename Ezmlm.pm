@@ -1,6 +1,6 @@
 # ===========================================================================
-# Ezmlm.pm - version 0.03 - 25/09/2000
-# $Id: Ezmlm.pm,v 1.7 2000/09/25 17:29:07 guy Exp $
+# Ezmlm.pm - version 0.04 - 26/05/2003
+# $Id: Ezmlm.pm,v 1.9 2003/05/26 17:43:00 guy Exp $
 #
 # Object methods for ezmlm mailing lists
 #
@@ -39,7 +39,7 @@
 package Mail::Ezmlm;
 
 use strict;
-use vars qw($QMAIL_BASE $EZMLM_BASE $MYSQL_BASE $VERSION @ISA @EXPORT @EXPORT_OK $ERRMSG $ERRNO);
+use vars qw($QMAIL_BASE $EZMLM_BASE $MYSQL_BASE $VERSION @ISA @EXPORT @EXPORT_OK);
 use Carp;
 
 require Exporter;
@@ -51,20 +51,17 @@ require Exporter;
 @EXPORT = qw(
    
 );
-$VERSION = '0.03';
+$VERSION = '0.04';
 
-require 5.002;
+require 5.005;
 
 # == Begin site dependant variables ==
-$EZMLM_BASE = '/usr/local/bin';
-$QMAIL_BASE = '/var/qmail';
-$MYSQL_BASE = '';
+$EZMLM_BASE = '/usr/local/bin'; 
+$QMAIL_BASE = '/var/qmail'; 
+$MYSQL_BASE = ''; 
 # == End site dependant variables ==
 
 use Carp;
-
-# == Global (Module Scope) variable declaration ==
-my($LIST_NAME);
 
 # == Initialiser - Returns a reference to the object ==
 sub new { 
@@ -91,9 +88,9 @@ sub make {
    }
 
    # These three variables are essential
-   (_seterror(-1, 'must define -dir in a make()') && return 0) unless(defined($list{'-dir'}));
-   (_seterror(-1, 'must define -qmail in a make()') && return 0) unless(defined($list{'-qmail'})); 
-   (_seterror(-1, 'must define -name in a make()') && return 0) unless(defined($list{'-name'}));
+   ($self->_seterror(-1, 'must define -dir in a make()') && return 0) unless(defined($list{'-dir'}));
+   ($self->_seterror(-1, 'must define -qmail in a make()') && return 0) unless(defined($list{'-qmail'})); 
+   ($self->_seterror(-1, 'must define -name in a make()') && return 0) unless(defined($list{'-name'}));
    
    # Determine hostname if it is not supplied
    $hostname = $self->_getdefaultdomain;
@@ -106,24 +103,24 @@ sub make {
    # Attempt to make the list if we can.
    unless(-e $list{'-dir'}) {
       system("$EZMLM_BASE/ezmlm-make", @commandline, $list{'-dir'}, $list{'-qmail'}, $list{'-name'}, $list{'-host'}) == 0
-         || (_seterror($?) && return undef);
+         || ($self->_seterror($?) && return undef);
    } else {
-      (_seterror(-1, '-dir must be defined in make()') && return 0);
+      ($self->_seterror(-1, '-dir must be defined in make()') && return 0);
    }   
 
    # Sort out the DIR/inlocal problem if necessary
    if(defined($VHOST)) {
       unless(defined($list{'-user'})) {
-         (_seterror(-1, '-user must match virtual host user in make()') && return 0) unless($list{'-user'} = $self->_getvhostuser($list{'-host'}));
+         ($self->_seterror(-1, '-user must match virtual host user in make()') && return 0) unless($list{'-user'} = $self->_getvhostuser($list{'-host'}));
       }
 
-      open(INLOCAL, ">$list{'-dir'}/inlocal") || (_seterror(-1, 'unable to read inlocal in make()') && return 0);
+      open(INLOCAL, ">$list{'-dir'}/inlocal") || ($self->_seterror(-1, 'unable to read inlocal in make()') && return 0);
       print INLOCAL $list{'-user'} . '-' . $list{'-name'} . "\n";
       close INLOCAL;
    }   
 
-   _seterror(undef);
-   return $LIST_NAME = $list{'-dir'};
+   $self->_seterror(undef);
+   return $self->{'LIST_NAME'} = $list{'-dir'};
 }
 
 # == Update the current list ==
@@ -132,7 +129,7 @@ sub update {
    my($outhost, $inlocal);
    
    # Do we have the command line switches
-   (_seterror(-1, 'nothing to update()') && return 0) unless(defined($switches));
+   ($self->_seterror(-1, 'nothing to update()') && return 0) unless(defined($switches));
    $switches = '-e' . $switches;
    my @switches;
 
@@ -143,34 +140,34 @@ sub update {
    }
 
    # can we actually alter this list;
-   (_seterror(-1, 'must setlist() before you update()') && return 0) unless(defined($LIST_NAME));
-   (_seterror(-1, "$LIST_NAME does not appear to be a valid list in update()") && return 0) unless(-e "$LIST_NAME/config");
+   ($self->_seterror(-1, 'must setlist() before you update()') && return 0) unless(defined($self->{'LIST_NAME'}));
+   ($self->_seterror(-1, "$self->{'LIST_NAME'} does not appear to be a valid list in update()") && return 0) unless(-e "$self->{'LIST_NAME'}/config");
 
    # Work out if this is a vhost.
-   open(OUTHOST, "<$LIST_NAME/outhost") || (_seterror(-1, 'unable to read outhost in update()') && return 0);
+   open(OUTHOST, "<$self->{'LIST_NAME'}/outhost") || ($self->_seterror(-1, 'unable to read outhost in update()') && return 0);
    chomp($outhost = <OUTHOST>);
    close(OUTHOST);
    
    # Save the contents of inlocal if it is a vhost
    unless($outhost eq $self->_getdefaultdomain) {
-      open(INLOCAL, "<$LIST_NAME/inlocal") || (_seterror(-1, 'unable to read inlocal in update()') && return 0);
+      open(INLOCAL, "<$self->{'LIST_NAME'}/inlocal") || ($self->_seterror(-1, 'unable to read inlocal in update()') && return 0);
       chomp($inlocal = <INLOCAL>);
       close(INLOCAL);
    }
 
    # Attempt to update the list if we can.
-   system("$EZMLM_BASE/ezmlm-make", @switches, $LIST_NAME) == 0
-      || (_seterror($?) && return undef);
+   system("$EZMLM_BASE/ezmlm-make", @switches, $self->{'LIST_NAME'}) == 0
+      || ($self->_seterror($?) && return undef);
 
    # Sort out the DIR/inlocal problem if necessary
    if(defined($inlocal)) {
-      open(INLOCAL, ">$LIST_NAME/inlocal") || (_seterror(-1, 'unable to write inlocal in update()') && return 0);
+      open(INLOCAL, ">$self->{'LIST_NAME'}/inlocal") || ($self->_seterror(-1, 'unable to write inlocal in update()') && return 0);
       print INLOCAL "$inlocal\n";
       close INLOCAL;
    }   
 
-   _seterror(undef);
-   return $LIST_NAME;
+   $self->_seterror(undef);
+   return $self->{'LIST_NAME'};
 }
 
 # == Get a list of options for the current list ==
@@ -179,7 +176,7 @@ sub getconfig {
    my($options, $i);
 
    # Read the config file
-   if(open(CONFIG, "<$LIST_NAME/config")) { 
+   if(open(CONFIG, "<$self->{'LIST_NAME'}/config")) { 
       while(<CONFIG>) {
          if (/^F:-(\w+)/) {
             $options = $1;
@@ -193,31 +190,32 @@ sub getconfig {
       $options = $self->_getconfigmanual(); 
    }
 
-   (_seterror(-1, 'unable to read configuration in getconfig()') && return undef) unless (defined($options));   
+   ($self->_seterror(-1, 'unable to read configuration in getconfig()') && return undef) unless (defined($options));   
 
    # Add the unselected options too
    foreach $i ('a' .. 'z') {
       $options .= uc($i) unless ($options =~ /$i/i)
    }
    
-   _seterror(undef);
+   $self->_seterror(undef);
    return $options;
 }
 
 # == Return the name of the current list ==
 sub thislist {
-   _seterror(undef);
-   return $LIST_NAME;
+	my($self) = shift;
+   $self->_seterror(undef);
+   return $self->{'LIST_NAME'};
 }
 
 # == Set the current mailing list ==
 sub setlist {
    my($self, $list) = @_;
    if (-e "$list/lock") {
-      _seterror(undef);
-      return $LIST_NAME = $list;
+      $self->_seterror(undef);
+      return $self->{'LIST_NAME'} = $list;
    } else {
-      _seterror(-1, "$list does not appear to be a valid list in setlist()");
+      $self->_seterror(-1, "$list does not appear to be a valid list in setlist()");
       return undef;
    }
 }
@@ -237,19 +235,19 @@ sub list {
 sub subscribers {
    my($self, $part) = @_;
    my(@subscribers);
-   (_seterror(-1, 'must setlist() before returning subscribers()') && return undef) unless(defined($LIST_NAME));
+   ($self->_seterror(-1, 'must setlist() before returning subscribers()') && return undef) unless(defined($self->{'LIST_NAME'}));
    if(defined($part) && $part) {
-      (_seterror(-1, "$part part of $LIST_NAME does not appear to exist in subscribers()") && return undef) unless(-e "$LIST_NAME/$part");
-      @subscribers = map { s/[\r\n]// && $_ } sort `$EZMLM_BASE/ezmlm-list $LIST_NAME/$part`;
+      ($self->_seterror(-1, "$part part of $self->{'LIST_NAME'} does not appear to exist in subscribers()") && return undef) unless(-e "$self->{'LIST_NAME'}/$part");
+      @subscribers = map { s/[\r\n]// && $_ } sort `$EZMLM_BASE/ezmlm-list $self->{'LIST_NAME'}/$part`;
    } else {
-      @subscribers = map { s/[\r\n]// && $_ } sort `$EZMLM_BASE/ezmlm-list $LIST_NAME`;
+      @subscribers = map { s/[\r\n]// && $_ } sort `$EZMLM_BASE/ezmlm-list $self->{'LIST_NAME'}`;
    }
 
    if($?) {
-      _seterror($?, 'error during ezmlm-list in subscribers()'); 
+      $self->_seterror($?, 'error during ezmlm-list in subscribers()'); 
       return @subscribers || undef;
    } else {
-      _seterror(undef);
+      $self->_seterror(undef);
       return @subscribers;   
    }
 }
@@ -257,133 +255,134 @@ sub subscribers {
 # == Subscribe users to the current list ==
 sub sub {
    my($self, @addresses) = @_;
-   (_seterror(-1, 'sub() must be called with at least one address') && return 0) unless @addresses;
+   ($self->_seterror(-1, 'sub() must be called with at least one address') && return 0) unless @addresses;
    my($part) = pop @addresses unless ($#addresses < 1 or $addresses[$#addresses] =~ /\@/);
    my($address); 
-   (_seterror(-1, 'must setlist() before sub()') && return 0) unless(defined($LIST_NAME));
+   ($self->_seterror(-1, 'must setlist() before sub()') && return 0) unless(defined($self->{'LIST_NAME'}));
 
    if(defined($part) && $part) {
-      (_seterror(-1, "$part of $LIST_NAME does not appear to exist in sub()") && return 0) unless(-e "$LIST_NAME/$part");
+      ($self->_seterror(-1, "$part of $self->{'LIST_NAME'} does not appear to exist in sub()") && return 0) unless(-e "$self->{'LIST_NAME'}/$part");
       foreach $address (@addresses) {
          next unless $self->_checkaddress($address);
-         system("$EZMLM_BASE/ezmlm-sub", "$LIST_NAME/$part", $address) == 0 || 
-            (_seterror($?) && return undef);
+         system("$EZMLM_BASE/ezmlm-sub", "$self->{'LIST_NAME'}/$part", $address) == 0 || 
+            ($self->_seterror($?) && return undef);
       }
    } else {
       foreach $address (@addresses) {
          next unless $self->_checkaddress($address);
-         system("$EZMLM_BASE/ezmlm-sub", $LIST_NAME, $address) == 0 ||
-            (_seterror($?) && return undef);
+         system("$EZMLM_BASE/ezmlm-sub", $self->{'LIST_NAME'}, $address) == 0 ||
+            ($self->_seterror($?) && return undef);
       }
    }
-   _seterror(undef);
+   $self->_seterror(undef);
    return 1;
 }
 
 # == Unsubscribe users from a list == 
 sub unsub {
    my($self, @addresses) = @_;
-   (_seterror(-1, 'unsub() must be called with at least one address') && return 0) unless @addresses;
+   ($self->_seterror(-1, 'unsub() must be called with at least one address') && return 0) unless @addresses;
    my($part) = pop @addresses unless ($#addresses < 1 or $addresses[$#addresses] =~ /\@/);
    my($address); 
-   (_seterror(-1, 'must setlist() before unsub()') && return 0) unless(defined($LIST_NAME));
+   ($self->_seterror(-1, 'must setlist() before unsub()') && return 0) unless(defined($self->{'LIST_NAME'}));
 
    if(defined($part) && $part) {
-      (_seterror(-1, "$part of $LIST_NAME does not appear to exist in unsub()") && return 0) unless(-e "$LIST_NAME/$part");
+      ($self->_seterror(-1, "$part of $self->{'LIST_NAME'} does not appear to exist in unsub()") && return 0) unless(-e "$self->{'LIST_NAME'}/$part");
       foreach $address (@addresses) {
          next unless $self->_checkaddress($address);
-         system("$EZMLM_BASE/ezmlm-unsub", "$LIST_NAME/$part", $address) == 0 || 
-            (_seterror($?) && return undef);
+         system("$EZMLM_BASE/ezmlm-unsub", "$self->{'LIST_NAME'}/$part", $address) == 0 || 
+            ($self->_seterror($?) && return undef);
       }   
    } else {
       foreach $address (@addresses) {
          next unless $self->_checkaddress($address);
-         system("$EZMLM_BASE/ezmlm-unsub", $LIST_NAME, $address) == 0 || 
-            (_seterror($?) && return undef);
+         system("$EZMLM_BASE/ezmlm-unsub", $self->{'LIST_NAME'}, $address) == 0 || 
+            ($self->_seterror($?) && return undef);
       }   
    }
-   _seterror(undef);
+   $self->_seterror(undef);
    return 1;
 }
 
 # == Test whether people are subscribed to the list ==
 sub issub {
-   my($self, @addresses, $part) = @_;
+   my($self, @addresses) = @_;
+   my($part) = pop @addresses unless ($#addresses < 1 or $addresses[$#addresses] =~ /\@/);
    my($address, $issub); $issub = 1; 
-   (_seterror(-1, 'must setlist() before issub()') && return 0) unless(defined($LIST_NAME));
+   ($self->_seterror(-1, 'must setlist() before issub()') && return 0) unless(defined($self->{'LIST_NAME'}));
 
 	local $ENV{'SENDER'};
 
    if(defined($part) && $part) {
-      (_seterror(-1, "$part of $LIST_NAME does not appear to exist in issub()") && return 0) unless(-e "$LIST_NAME/$part");
+      ($self->_seterror(-1, "$part of $self->{'LIST_NAME'} does not appear to exist in issub()") && return 0) unless(-e "$self->{'LIST_NAME'}/$part");
       foreach $address (@addresses) {
 			$ENV{'SENDER'} = $address;
-         undef($issub) if ((system("$EZMLM_BASE/ezmlm-issubn", "$LIST_NAME/$part") / 256) != 0)
+         undef($issub) if ((system("$EZMLM_BASE/ezmlm-issubn", "$self->{'LIST_NAME'}/$part") / 256) != 0)
       }   
    } else {
       foreach $address (@addresses) {
 			$ENV{'SENDER'} = $address;
-         undef($issub) if ((system("$EZMLM_BASE/ezmlm-issubn", $LIST_NAME) / 256) != 0)
+         undef($issub) if ((system("$EZMLM_BASE/ezmlm-issubn", $self->{'LIST_NAME'}) / 256) != 0)
       }   
    }
 
-   _seterror(undef);
+   $self->_seterror(undef);
    return $issub;
 }
 
 # == Is the list posting moderated ==
 sub ismodpost {
    my($self) = @_;
-   (_seterror(-1, 'must setlist() before ismodpost()') && return 0) unless(defined($LIST_NAME));
-   _seterror(undef);
-   return -e "$LIST_NAME/modpost"; 
+   ($self->_seterror(-1, 'must setlist() before ismodpost()') && return 0) unless(defined($self->{'LIST_NAME'}));
+   $self->_seterror(undef);
+   return -e "$self->{'LIST_NAME'}/modpost"; 
 }
 
 # == Is the list subscriber moderated ==
 sub ismodsub {
    my($self) = @_;
-   (_seterror(-1, 'must setlist() before ismodsub()') && return 0) unless(defined($LIST_NAME));
-   _seterror(undef);
-   return -e "$LIST_NAME/modsub"; 
+   ($self->_seterror(-1, 'must setlist() before ismodsub()') && return 0) unless(defined($self->{'LIST_NAME'}));
+   $self->_seterror(undef);
+   return -e "$self->{'LIST_NAME'}/modsub"; 
 }
 
 # == Is the list remote adminable ==
 sub isremote {
    my($self) = @_;
-   (_seterror(-1, 'must setlist() before isremote()') && return 0) unless(defined($LIST_NAME));
-   _seterror(undef);
-   return -e "$LIST_NAME/remote"; 
+   ($self->_seterror(-1, 'must setlist() before isremote()') && return 0) unless(defined($self->{'LIST_NAME'}));
+   $self->_seterror(undef);
+   return -e "$self->{'LIST_NAME'}/remote"; 
 }
 
 # == Does the list have a kill list ==
 sub isdeny {
    my($self) = @_;
-   (_seterror(-1, 'must setlist() before isdeny()') && return 0) unless(defined($LIST_NAME));
-   _seterror(undef);
-   return -e "$LIST_NAME/deny"; 
+   ($self->_seterror(-1, 'must setlist() before isdeny()') && return 0) unless(defined($self->{'LIST_NAME'}));
+   $self->_seterror(undef);
+   return -e "$self->{'LIST_NAME'}/deny"; 
 }
 
 # == Does the list have an allow list ==
 sub isallow {
    my($self) = @_;
-   (_seterror(-1, 'must setlist() before isallow()') && return 0) unless(defined($LIST_NAME));
-   _seterror(undef);
-   return -e "$LIST_NAME/allow"; 
+   ($self->_seterror(-1, 'must setlist() before isallow()') && return 0) unless(defined($self->{'LIST_NAME'}));
+   $self->_seterror(undef);
+   return -e "$self->{'LIST_NAME'}/allow"; 
 }
 
 # == Is this a digested list ==
 sub isdigest {
    my($self) = @_;
-   (_seterror(-1, 'must setlist() before isdigest()') && return 0) unless(defined($LIST_NAME));
-   _seterror(undef);
-   return -e "$LIST_NAME/digest"; 
+   ($self->_seterror(-1, 'must setlist() before isdigest()') && return 0) unless(defined($self->{'LIST_NAME'}));
+   $self->_seterror(undef);
+   return -e "$self->{'LIST_NAME'}/digest"; 
 }
 
 # == retrieve file contents ==
 sub getpart {
    my($self, $part) = @_;
    my(@contents, $content);
-   if(open(PART, "<$LIST_NAME/$part")) {
+   if(open(PART, "<$self->{'LIST_NAME'}/$part")) {
       while(<PART>) {
          chomp($contents[$#contents++] = $_);
          $content .= $_;
@@ -394,36 +393,39 @@ sub getpart {
       } else {
          return $content;
       }
-   } (_seterror($?) && return undef);
+   } ($self->_seterror($?) && return undef);
 }
 
 # == set files contents ==
 sub setpart {
    my($self, $part, @content) = @_;
    my($line);
-   if(open(PART, ">$LIST_NAME/$part")) {
+   if(open(PART, ">$self->{'LIST_NAME'}/$part")) {
       foreach $line (@content) {
          $line =~ s/[\r]//g; $line =~ s/\n$//;
          print PART "$line\n";
       }
       close PART;
       return 1;
-   } (_seterror($?) && return undef);
+   } ($self->_seterror($?) && return undef);
 }
 
 # == return an error message if appropriate ==
 sub errmsg {
-   return $ERRMSG;
+	my($self) = @_;
+   return $self->{'ERRMSG'};
 }
 
 sub errno {
-   return $ERRNO;
+	my($self) = @_;
+   return $self->{'ERRNO'};
 }
 
 # == Test the compatiblity of the module ==
 sub check_version {
+	my($self) = @_;
    my $version = `$EZMLM_BASE/ezmlm-make -V 2>&1`;
-   _seterror(undef);
+   $self->_seterror(undef);
 
    my ($ezmlm, $idx) = $version =~ m/^ezmlm-make\s+version:\s+ezmlm-([\d.]+)(?:\+ezmlm-idx-([\d.]+))?/;
    if($ezmlm >= 0.53) {
@@ -443,46 +445,46 @@ sub check_version {
 sub createsql {
 	my($self) = @_;
 
-	(_seterror(-1, 'MySQL must be compiled into Ezmlm for createsql() to work') && return 0)  unless(defined($MYSQL_BASE) && $MYSQL_BASE);
-	(_seterror(-1, 'must setlist() before isdigest()') && return 0) unless(defined($LIST_NAME));
+	($self->_seterror(-1, 'MySQL must be compiled into Ezmlm for createsql() to work') && return 0)  unless(defined($MYSQL_BASE) && $MYSQL_BASE);
+	($self->_seterror(-1, 'must setlist() before isdigest()') && return 0) unless(defined($self->{'LIST_NAME'}));
 	my($config) = $self->getconfig();
 
 	if($config =~ m/-6\s+'(.+?)'\s*/){
 		my($sqlsettings) = $1;
 		my($host, $port, $user, $password, $database, $table) = split(':', $sqlsettings, 6);
 
-		(_seterror(-1, 'error in list configuration while trying createsql()') && return 0) 
+		($self->_seterror(-1, 'error in list configuration while trying createsql()') && return 0) 
 			unless (defined($host) && defined($port) && defined($user) 
 					&& defined($password) && defined($database) && defined($table));
 
       system("$EZMLM_BASE/ezmlm-mktab -d $table | $MYSQL_BASE/mysql -h$host -P$port -u$user -p$password -f $database") == 0 ||
-      	(_seterror($?) && return undef);
+      	($self->_seterror($?) && return undef);
 
 	} else {
-		_seterr(-1, 'config for thislist() must include SQL options');
+		$self->_seterror(-1, 'config for thislist() must include SQL options');
 		return 0;
 	}
 
-	(_seterror(undef) && return 1);
+	($self->_seterror(undef) && return 1);
 
 }
 
 
 # == Internal function to set the error to return ==
 sub _seterror {
-   my($no, $mesg) = @_;
+   my($self, $no, $mesg) = @_;
 
    if(defined($no) && $no) {
       if($no < 0) {
-         $ERRNO = -1;
-         $ERRMSG = $mesg || 'An undefined error occoured';
+         $self->{'ERRNO'} = -1;
+         $self->{'ERRMSG'} = $mesg || 'An undefined error occoured';
       } else {
-         $ERRNO = $no / 256;
-         $ERRMSG = $! || $mesg || 'An undefined error occoured in a system() call';
+         $self->{'ERRNO'} = $no / 256;
+         $self->{'ERRMSG'} = $! || $mesg || 'An undefined error occoured in a system() call';
       }
    } else {
-      $ERRNO = 0;
-      $ERRMSG = undef;
+      $self->{'ERRNO'} = 0;
+      $self->{'ERRMSG'} = undef;
    }
    return 1;
 }
@@ -505,31 +507,31 @@ sub _getconfigmanual {
    undef $/;
    # $/ = \0777;
 
-   open (EDITOR, "<$LIST_NAME/editor") || (_seterror($?) && return undef);
-   open (MANAGER, "<$LIST_NAME/manager") || (_seterror($?) && return undef);
+   open (EDITOR, "<$self->{'LIST_NAME'}/editor") || ($self->_seterror($?) && return undef);
+   open (MANAGER, "<$self->{'LIST_NAME'}/manager") || ($self->_seterror($?) && return undef);
    $editor = <EDITOR>; $manager = <MANAGER>;
    close(EDITOR), close(MANAGER);
 
    $/ = $savedollarslash;
    
    $options = '';
-   $options .= 'a' if (-e "$LIST_NAME/archived");
-   $options .= 'd' if (-e "$LIST_NAME/digest");
-   $options .= 'f' if (-e "$LIST_NAME/prefix");
+   $options .= 'a' if (-e "$self->{'LIST_NAME'}/archived");
+   $options .= 'd' if (-e "$self->{'LIST_NAME'}/digest");
+   $options .= 'f' if (-e "$self->{'LIST_NAME'}/prefix");
    $options .= 'g' if ($manager =~ /ezmlm-get -\w*s/ );
-   $options .= 'i' if (-e "$LIST_NAME/indexed");
-   $options .= 'k' if (-e "$LIST_NAME/blacklist" || -e "$LIST_NAME/deny");
+   $options .= 'i' if (-e "$self->{'LIST_NAME'}/indexed");
+   $options .= 'k' if (-e "$self->{'LIST_NAME'}/blacklist" || -e "$self->{'LIST_NAME'}/deny");
    $options .= 'l' if ($manager =~ /ezmlm-manage -\w*l/ );
-   $options .= 'm' if (-e "$LIST_NAME/modpost");
+   $options .= 'm' if (-e "$self->{'LIST_NAME'}/modpost");
    $options .= 'n' if ($manager =~ /ezmlm-manage -\w*e/ );
-   $options .= 'p' if (-e "$LIST_NAME/public");
+   $options .= 'p' if (-e "$self->{'LIST_NAME'}/public");
    $options .= 'q' if ($manager =~ /ezmlm-request/ );
-   $options .= 'r' if (-e "$LIST_NAME/remote");
-   $options .= 's' if (-e "$LIST_NAME/modsub");
-   $options .= 't' if (-e "$LIST_NAME/text/trailer");
+   $options .= 'r' if (-e "$self->{'LIST_NAME'}/remote");
+   $options .= 's' if (-e "$self->{'LIST_NAME'}/modsub");
+   $options .= 't' if (-e "$self->{'LIST_NAME'}/text/trailer");
    $options .= 'u' if (($options !~ /m/ && $editor =~ /ezmlm-issubn \'/ )
                       || $editor =~ /ezmlm-gate/ );
-   $options .= 'x' if (-e "$LIST_NAME/extra" || -e "$LIST_NAME/allow");
+   $options .= 'x' if (-e "$self->{'LIST_NAME'}/extra" || -e "$self->{'LIST_NAME'}/allow");
 
    return $options;
 }
@@ -539,7 +541,7 @@ sub _getvhostuser {
    my($self, $hostname) = @_;
    my($username);
 
-   open(VD, "<$QMAIL_BASE/control/virtualdomains") || (_seterror($?) && return undef);
+   open(VD, "<$QMAIL_BASE/control/virtualdomains") || ($self->_seterror($?) && return undef);
    while(<VD>) {
       last if(($username) = /^\s*$hostname:(\w+)$/);
    }
@@ -555,7 +557,7 @@ sub _getdefaultdomain {
 
    open (GETHOST, "<$QMAIL_BASE/control/me") 
       || open (GETHOST, "<$QMAIL_BASE/control/defaultdomain") 
-      || (_seterror($?) && return undef);
+      || ($self->_seterror($?) && return undef);
    chomp($hostname = <GETHOST>);
    close GETHOST;
 
@@ -783,11 +785,13 @@ that they know about nothing :)
 
 =head1 AUTHOR
 
- Guy Antony Halse <guy-ezmlm@rucus.ru.ac.za>
+ Guy Antony Halse <guy-ezmlm@rucus.net>
 
 =head1 BUGS
 
- None known yet. Please report bugs to the author.
+ May have problems with newer versions of Perl.
+
+ Please report bugs to the author.
 
 =head1 SEE ALSO
 
