@@ -1,14 +1,8 @@
-$Id: README,v 1.2 2003/05/26 17:36:37 guy Exp $
+$Id: README,v 1.3 2005/03/05 14:14:06 guy Exp $
 
 Ezmlm.pm
 
 Object methods for ezmlm mailing lists.
-
-This software is *still* a beta release. As such, please treat it with the
-appropriate amount of caution. Let me know if you find any bugs, etc.
-
-The main reason for release is to sort of 'test the waters' ... Does anyone
-apart from me think this is a good idea??
 
 Install by doing the following ...
 # perl Makefile.PL
@@ -20,5 +14,9 @@ you use the full cantonical path for the qmail and ezmlm binaries.
 
 Documentation is in pod format. Please run perldoc Mail::Ezmlm after you have
 installed it.
+
+Much as I'd like to, I don't have the time to regularly maintain this.  New
+releases are infrequent at best.  Check http://guy.rucus.net/ezmlm/contrib/
+for patches, etc that may be useful.
 
 - Guy Antony Halse <guy-ezmlm@rucus.ru.ac.za>

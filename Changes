@@ -1,4 +1,4 @@
-$Id: Changes,v 1.4 2003/05/26 17:40:51 guy Exp $
+$Id: Changes,v 1.5 2005/03/05 14:14:27 guy Exp $
 
 Revision history for Perl extension Mail::Ezmlm.
 
@@ -20,6 +20,13 @@ Revision history for Perl extension Mail::Ezmlm.
    - hopefully got rid of some of the warnings from sub() and unsub()
 
 0.04 Mon May 26 18:15:38 SAST 2003
-	- fixed return value of Makefile.PL (Andrew Pam <xanni@glasswings.com.au>)
-	- fixed issub() (again) to handle parts properly (moguo@servism.com)
-	- converted module global variables to instance variables
+   - fixed return value of Makefile.PL (Andrew Pam <xanni@glasswings.com.au>)
+   - fixed issub() (again) to handle parts properly (bug 602; moguo@servism.com)
+   - converted module global variables to instance variables
+
+0.05 Sat Mar  5 12:47:10 SAST 2005
+   - fixed forced scalar return in subscribers() (Jon Coulter <ledjon@ledjon.com>)
+   - fixed handling of dashes in hostnames (bug 5571; Lars Braeuer <lbraeuer@mpex.net>)
+   - fixed some tainting problems (Scott Beck <sbeck@gossamer-threads.com> and Matt Simerson <matt@tnpi.biz>)
+   - fixed order of control/defaulthost and control/me (bug 1515)
+	

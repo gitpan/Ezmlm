@@ -1,6 +1,6 @@
 # ===========================================================================
 # test.pl - version 0.02 - 25/09/2000
-# $Id: test.pl,v 1.4 2003/05/26 17:35:09 guy Exp $
+# $Id: test.pl,v 1.5 2005/03/05 14:08:30 guy Exp $
 # Test suite for Mail::Ezmlm
 #
 # Copyright (C) 1999, Guy Antony Halse, All Rights Reserved.
@@ -30,6 +30,7 @@ print "Loading: ok 1\n";
 # of the test code):
 
 use Cwd;
+use File::Find;
 $list = new Mail::Ezmlm;
 
 # create a temp directory if necessary
@@ -134,5 +135,6 @@ if($failed > 0) {
    exit $failed;
 } else {
    print "\nSuccessful :-)\n";
+   finddepth(sub { (-d $File::Find::name) ? rmdir ($File::Find::name) : unlink ($File::Find::name) }, cwd() . "/ezmlmtmp");
    exit;
 }

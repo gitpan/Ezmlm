@@ -1,10 +1,10 @@
 # ===========================================================================
 # Ezmlm.pm - version 0.04 - 26/05/2003
-# $Id: Ezmlm.pm,v 1.9 2003/05/26 17:43:00 guy Exp $
+# $Id: Ezmlm.pm,v 1.10 2005/03/05 14:11:11 guy Exp $
 #
 # Object methods for ezmlm mailing lists
 #
-# Copyright (C) 1999, Guy Antony Halse, All Rights Reserved.
+# Copyright (C) 1999-2005, Guy Antony Halse, All Rights Reserved.
 # Please send bug reports and comments to guy@rucus.ru.ac.za
 #
 # Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@ require Exporter;
 @EXPORT = qw(
    
 );
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 require 5.005;
 
@@ -62,6 +62,9 @@ $MYSQL_BASE = '';
 # == End site dependant variables ==
 
 use Carp;
+
+# == clean up the path for taint checking ==
+local $ENV{'PATH'} = $EZMLM_BASE;
 
 # == Initialiser - Returns a reference to the object ==
 sub new { 
@@ -82,7 +85,7 @@ sub make {
    $commandline = '-' . $list{'-switches'} if(defined($list{'-switches'}));
    my @commandline;
    # UGLY!
-   foreach (split(/["'](.+?)["']|(-\w+)/, $commandline)) {
+   foreach (split(/["'](.+?)["']|(\s-\w+)/, $commandline)) {
       next if (!defined($_) or !$_ or $_ eq ' ');
       push @commandline, $_;
    }
@@ -120,7 +123,7 @@ sub make {
    }   
 
    $self->_seterror(undef);
-   return $self->{'LIST_NAME'} = $list{'-dir'};
+   return $self->setlist($list{'-dir'});
 }
 
 # == Update the current list ==
@@ -203,7 +206,7 @@ sub getconfig {
 
 # == Return the name of the current list ==
 sub thislist {
-	my($self) = shift;
+   my($self) = shift;
    $self->_seterror(undef);
    return $self->{'LIST_NAME'};
 }
@@ -211,11 +214,17 @@ sub thislist {
 # == Set the current mailing list ==
 sub setlist {
    my($self, $list) = @_;
-   if (-e "$list/lock") {
-      $self->_seterror(undef);
-      return $self->{'LIST_NAME'} = $list;
+   if ($list =~ m/^([\w\d\_\-\.\/]+)$/) {
+      $list = $1;
+      if (-e "$list/lock") {
+          $self->_seterror(undef);
+         return $self->{'LIST_NAME'} = $list;
+      } else {
+         $self->_seterror(-1, "$list does not appear to be a valid list in setlist()");
+         return undef;
+      }
    } else {
-      $self->_seterror(-1, "$list does not appear to be a valid list in setlist()");
+      $self->_seterror(-1, "$list contains tainted data in setlist()");
       return undef;
    }
 }
@@ -245,7 +254,7 @@ sub subscribers {
 
    if($?) {
       $self->_seterror($?, 'error during ezmlm-list in subscribers()'); 
-      return @subscribers || undef;
+      return (scalar @subscribers ? @subscribers : undef);
    } else {
       $self->_seterror(undef);
       return @subscribers;   
@@ -311,17 +320,17 @@ sub issub {
    my($address, $issub); $issub = 1; 
    ($self->_seterror(-1, 'must setlist() before issub()') && return 0) unless(defined($self->{'LIST_NAME'}));
 
-	local $ENV{'SENDER'};
+   local $ENV{'SENDER'};
 
    if(defined($part) && $part) {
       ($self->_seterror(-1, "$part of $self->{'LIST_NAME'} does not appear to exist in issub()") && return 0) unless(-e "$self->{'LIST_NAME'}/$part");
       foreach $address (@addresses) {
-			$ENV{'SENDER'} = $address;
+         $ENV{'SENDER'} = $address;
          undef($issub) if ((system("$EZMLM_BASE/ezmlm-issubn", "$self->{'LIST_NAME'}/$part") / 256) != 0)
       }   
    } else {
       foreach $address (@addresses) {
-			$ENV{'SENDER'} = $address;
+         $ENV{'SENDER'} = $address;
          undef($issub) if ((system("$EZMLM_BASE/ezmlm-issubn", $self->{'LIST_NAME'}) / 256) != 0)
       }   
    }
@@ -412,18 +421,18 @@ sub setpart {
 
 # == return an error message if appropriate ==
 sub errmsg {
-	my($self) = @_;
+   my($self) = @_;
    return $self->{'ERRMSG'};
 }
 
 sub errno {
-	my($self) = @_;
+   my($self) = @_;
    return $self->{'ERRNO'};
 }
 
 # == Test the compatiblity of the module ==
 sub check_version {
-	my($self) = @_;
+   my($self) = @_;
    my $version = `$EZMLM_BASE/ezmlm-make -V 2>&1`;
    $self->_seterror(undef);
 
@@ -443,29 +452,29 @@ sub check_version {
 
 # == Create SQL Database tables if defined for a list ==
 sub createsql {
-	my($self) = @_;
+   my($self) = @_;
 
-	($self->_seterror(-1, 'MySQL must be compiled into Ezmlm for createsql() to work') && return 0)  unless(defined($MYSQL_BASE) && $MYSQL_BASE);
-	($self->_seterror(-1, 'must setlist() before isdigest()') && return 0) unless(defined($self->{'LIST_NAME'}));
-	my($config) = $self->getconfig();
+   ($self->_seterror(-1, 'MySQL must be compiled into Ezmlm for createsql() to work') && return 0)  unless(defined($MYSQL_BASE) && $MYSQL_BASE);
+   ($self->_seterror(-1, 'must setlist() before isdigest()') && return 0) unless(defined($self->{'LIST_NAME'}));
+   my($config) = $self->getconfig();
 
-	if($config =~ m/-6\s+'(.+?)'\s*/){
-		my($sqlsettings) = $1;
-		my($host, $port, $user, $password, $database, $table) = split(':', $sqlsettings, 6);
+   if($config =~ m/-6\s+'(.+?)'\s*/){
+      my($sqlsettings) = $1;
+      my($host, $port, $user, $password, $database, $table) = split(':', $sqlsettings, 6);
 
-		($self->_seterror(-1, 'error in list configuration while trying createsql()') && return 0) 
-			unless (defined($host) && defined($port) && defined($user) 
-					&& defined($password) && defined($database) && defined($table));
+      ($self->_seterror(-1, 'error in list configuration while trying createsql()') && return 0) 
+         unless (defined($host) && defined($port) && defined($user) 
+            && defined($password) && defined($database) && defined($table));
 
       system("$EZMLM_BASE/ezmlm-mktab -d $table | $MYSQL_BASE/mysql -h$host -P$port -u$user -p$password -f $database") == 0 ||
-      	($self->_seterror($?) && return undef);
+      ($self->_seterror($?) && return undef);
 
-	} else {
-		$self->_seterror(-1, 'config for thislist() must include SQL options');
-		return 0;
-	}
+   } else {
+      $self->_seterror(-1, 'config for thislist() must include SQL options');
+      return 0;
+   }
 
-	($self->_seterror(undef) && return 1);
+   ($self->_seterror(undef) && return 1);
 
 }
 
@@ -492,8 +501,9 @@ sub _seterror {
 # == Internal function to test for valid email addresses ==
 sub _checkaddress {
    my($self, $address) = @_;
-	return 1 unless defined($address);
-   return 0 unless($address =~ /^\S+\@\S+\.\S+$/);
+   return 1 unless defined($address);
+   return 0 unless ($address =~ m/^(\S+\@\S+\.\S+)$/);
+   $_[1] = $1;
    return 1;
 }
 
@@ -555,8 +565,8 @@ sub _getdefaultdomain {
    my($self) = @_;
    my($hostname);
 
-   open (GETHOST, "<$QMAIL_BASE/control/me") 
-      || open (GETHOST, "<$QMAIL_BASE/control/defaultdomain") 
+   open (GETHOST, "<$QMAIL_BASE/control/defaultdomain") 
+      || open (GETHOST, "<$QMAIL_BASE/control/me") 
       || ($self->_seterror($?) && return undef);
    chomp($hostname = <GETHOST>);
    close GETHOST;
@@ -736,7 +746,7 @@ various text files such as headeradd, headerremove, mimeremove, etc.
 
 =head2 Creating MySQL tables:
 
-	$list->createsql();
+   $list->createsql();
 
 Currently only works for MySQL.
 
