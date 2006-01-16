@@ -125,9 +125,103 @@ print 'Testing installed version of ezmlm: ';
 my($version) = $list->check_version();
 if ($version) {
    $version =~ s/\n//;
-   print 'not ok 9 [Ezmlm.pm is designed to work with ezmlm-idx > 0.40.  Your version reports as: ', $version, "]\n";
+   print 'not ok 9 [Warning: Ezmlm.pm is designed to work with ezmlm-idx > 0.40.  Your version reports as: ', $version, "]\n";
 } else {
    print "ok 9\n";
+}
+
+print 'Testing retrieving of text files: ';
+if ($list->get_text_content('sub-ok') ne '') {
+	print "ok 10\n";
+} else {
+	print 'not ok 10 [', $list->errmsg(), "]\n";
+	$failed++;
+}
+
+print 'Testing changing of text files: ';
+$list->set_text_content('sub-ok', "testing message\n");
+if ($list->get_text_content('sub-ok') eq "testing message\n") {
+	print "ok 11\n";
+} else {
+	print 'not ok 11 [', $list->errmsg(), "]\n";
+	$failed++;
+}
+
+print 'Testing if text file is marked as customized (only idx >= 5.0): ';
+if ($list->get_version() >= 5) {
+	if ($list->is_text_default('sub-ok')) {
+		print 'not ok 12 [', $list->errmsg(), "]\n";
+		$failed++;
+	} else {
+		print "ok 12\n";
+	}
+} else {
+	print "ok 12 [skipped]\n";
+}
+
+print 'Testing resetting text files (only idx >= 5.0): ';
+if ($list->get_version() >= 5) {
+	$list->reset_text('sub-ok');
+	if ($list->is_text_default('sub-ok')) {
+		print "ok 13\n";
+	} else {
+		print 'not ok 13 [', $list->errmsg(), "]\n";
+		$failed++;
+	}
+} else {
+	print "ok 13 [skipped]\n";
+}
+
+print 'Testing retrieving available languages (only idx >= 5.0): ';
+if ($list->get_version() >= 5) {
+	my @avail_langs = $list->get_available_languages();
+	if ($#avail_langs > 0) {
+		print "ok 14\n";
+	} else {
+		print 'not ok 14 [', $list->errmsg(), "]\n";
+		$failed++;
+	}
+} else {
+	print "ok 14 [skipped]\n";
+}
+
+print 'Testing changing the configured language (only idx >= 5.0): ';
+if ($list->get_version() >= 5) {
+	my @avail_langs = $list->get_available_languages();
+	$list->set_lang($avail_langs[$#avail_langs-1]);
+	if ($list->get_lang() eq $avail_langs[$#avail_langs-1]) {
+		print "ok 15\n";
+	} else {
+		print 'not ok 15 [', $list->errmsg(), "]\n";
+		$failed++;
+	}
+} else {
+	print "ok 15 [skipped]\n";
+}
+
+print 'Testing getting the configuration directory (only idx >= 5.0): ';
+if ($list->get_version() >= 5) {
+	if ($list->get_config_dir() ne '') {
+		print "ok 16\n";
+	} else {
+		print 'not ok 16 [', $list->errmsg(), "]\n";
+		$failed++;
+	}
+} else {
+	print "ok 16 [skipped]\n";
+}
+
+print 'Testing changing the configuration directory (only idx >= 5.0): ';
+if ($list->get_version() >= 5) {
+	$list->set_config_dir('/etc/ezmlm-local');
+	if ($list->get_config_dir() eq '/etc/ezmlm-local') {
+		print "ok 17\n";
+	} else {
+		print 'not ok 17 [', $list->errmsg(), "]\n";
+		$failed++;
+	}
+} else {
+	print "ok 17 [skipped]\n";
 }
 
 if($failed > 0) {
