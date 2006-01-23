@@ -156,7 +156,7 @@ sub update {
 		$_ =~ s/['"]//g;
 		$_ =~ m/^([\w _\/,\.\@:'"-]*)$/;
 		if ($_ eq '') {
-			push @switch_list, " ";
+			push @switch_list, "";
 		} else {
 			push @switch_list, $1;
 		}
@@ -210,7 +210,9 @@ sub getconfig {
 			if (/^F:-(\w+)/) {
 				$options = $1;
 			} elsif (/^(\d):(.+)$/) {
-				$options .= " -$1 '$2'";
+				my $opt_num = $1;
+				my $value = $2;
+				$options .= " -$opt_num '$value'" if ($value =~ /\S/);
 			}
 		}
 		close CONFIG;

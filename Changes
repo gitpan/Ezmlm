@@ -1,5 +1,3 @@
-$Id: Changes,v 1.5 2005/03/05 14:14:27 guy Exp $
-
 Revision history for Perl extension Mail::Ezmlm.
 
 0.01  Sun Oct 31 12:58:16 1999
@@ -42,3 +40,7 @@ Revision history for Perl extension Mail::Ezmlm.
    - new functions for config directory setting (idx >= 5.0)
    - look for ezmlm-make at run-time
    - requires Text::ParseWords
+
+0.07.1 Mon Jan 23 22:30:14 CET 2006
+   - fix misinterpretation of empty settings
+
