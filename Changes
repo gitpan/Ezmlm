@@ -44,3 +44,6 @@ Revision history for Perl extension Mail::Ezmlm.
 0.07.1 Mon Jan 23 22:30:14 CET 2006
    - fix misinterpretation of empty settings
 
+0.07.2 Tue Jun 20 01:05:56 UTC 2006
+   - fixed 'get_charset' and 'set_charset' for idx < 5.0
+

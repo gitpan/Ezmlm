@@ -542,12 +542,11 @@ sub set_lang {
 }
 
 
-# == get the selected charset of the list (idx >= 5.0) ==
-# return empty string for idx < 5.0
+# == get the selected charset of the list ==
+# return default value (us-ascii) if no charset is specified
 sub get_charset {
 	my ($self) = shift;
 	my $charset;
-	return '' if (get_version() < 5);
 	chomp($charset = $self->getpart('charset'));
 	# default if no 'charset' file exists
 	$charset = 'us-ascii' if ($charset eq '');
@@ -556,12 +555,10 @@ sub get_charset {
 
 
 # == set the selected charset of the list (idx >= 5.0) ==
-# return without error for idx < 5.0
 # remove list' specific charset file, if the default charset of the current language
 # was chosen
 sub set_charset {
 	my ($self, $charset) = @_;
-	return (0==0) if (get_version() < 5);
 	# first: remove current charset
 	unlink "$self->{'LIST_NAME'}/charset";
 	# second: get default value of the current language
@@ -1114,9 +1111,9 @@ system-wide default text file, if there is no customized text file for this list
    $list->get_config_dir;
    $list->set_config_dir('/etc/ezmlm-local');
 
-These function access the file 'conf-etc' in the mailing list's directory. The
-static function always returns the default configuration directory of ezmlm-idx
-(/etc/ezmlm).
+These functions access the file 'conf-etc' in the mailing list's directory. The
+static function (first example) always returns the default configuration directory
+of ezmlm-idx (/etc/ezmlm).
 
    $list->get_available_languages;
    $list->get_lang;
