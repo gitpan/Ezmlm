@@ -1,11 +1,12 @@
 # ===========================================================================
-# Ezmlm.pm - version 0.04 - 26/05/2003
-# $Id: Ezmlm.pm,v 1.10 2005/03/05 14:11:11 guy Exp $
+# Ezmlm.pm - version 0.08.1 - 10/12/2008
+# $Id: Ezmlm.pm 437 2008-10-12 02:45:27Z lars $
 #
 # Object methods for ezmlm mailing lists
 #
 # Copyright (C) 1999-2005, Guy Antony Halse, All Rights Reserved.
-# Please send bug reports and comments to guy@rucus.ru.ac.za
+# Copyright (C) 2005-2008, Lars Kruse, All Rights Reserved.
+# Please send bug reports and comments to ezmlm-web@sumpfralle.de.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
@@ -52,7 +53,7 @@ require Exporter;
 @EXPORT = qw(
    
 );
-$VERSION = '0.07';
+$VERSION = '0.08.1';
 
 require 5.005;
 
@@ -91,10 +92,16 @@ sub make {
 	my $commandline = '';
 	$commandline = '-' . $list{'-switches'} if(defined($list{'-switches'}));
 	my @commandline;
-	# UGLY!
-	foreach (split(/["'](.+?)["']|(\s-\w+)/, $commandline)) {
-		next if (!defined($_) or !$_ or $_ eq ' ');
-		push @commandline, $_;
+	foreach (&quotewords('\s+', 1, $commandline)) {
+		next if (!defined($_));
+		# untaint input
+		$_ =~ s/['"]//g;
+		$_ =~ m/^([\w _\/,\.\@:'"-]*)$/;
+		if ($_ =~ /^\s*$/) {
+			push @commandline, "";
+		} else {
+			push @commandline, $1;
+		}
 	}
 
 	# These three variables are essential
@@ -110,12 +117,17 @@ sub make {
 		$list{'-host'} = $hostname;
 	}
 
+	# does the mailing list directory already exist?
+	if (-e $list{'-dir'}) {
+		$self->_seterror(-1,
+			'-the mailing list directory already exists: ' . $list{'-dir'});
+		return undef;
+	}
+
 	# Attempt to make the list if we can.
-	unless(-e $list{'-dir'}) {
-		system("$EZMLM_BASE/ezmlm-make", @commandline, $list{'-dir'}, $list{'-qmail'}, $list{'-name'}, $list{'-host'}) == 0
-			|| ($self->_seterror($?) && return undef);
-	} else {
-		($self->_seterror(-1, '-dir must be defined in make()') && return 0);
+	if (system("$EZMLM_BASE/ezmlm-make", @commandline, $list{'-dir'}, $list{'-qmail'}, $list{'-name'}, $list{'-host'}) != 0) {
+		$self->_seterror($?, '-failed to create mailing list - check your webserver\'s log file for details');
+		return undef;
 	}   
 
 	# Sort out the DIR/inlocal problem if necessary
@@ -137,25 +149,18 @@ sub make {
 sub update {
 	my($self, $switches) = @_;
 	my($outhost, $inlocal);
-	   
+
 	# Do we have the command line switches
 	($self->_seterror(-1, 'nothing to update()') && return 0) unless(defined($switches));
 	$switches = '-e' . $switches;
 	my @switch_list;
 
-	# UGLY!
-	#foreach (split(/["'](.+?)["']|(-\w+)/, $switches)) {
-	#	next if (!defined($_));
-	#	# untaint input
-	#	$_ =~ m/^([\w _\/,\.\@:'"-]*)$/;
-	#	push @switches, $1;
-	#}
 	foreach (&quotewords('\s+', 1, $switches)) {
 		next if (!defined($_));
 		# untaint input
 		$_ =~ s/['"]//g;
 		$_ =~ m/^([\w _\/,\.\@:'"-]*)$/;
-		if ($_ eq '') {
+		if ($_ =~ /^\s*$/) {
 			push @switch_list, "";
 		} else {
 			push @switch_list, $1;
@@ -200,11 +205,11 @@ sub getconfig {
 	my($options);
 
 	# Read the config file
-	if(-e "$self->{'LIST_NAME'}/flags") { 
+	if(-e $self->{LIST_NAME} . "/flags") { 
 		# this file exists since ezmlm-idx-5.0.0
 		# 'config' is not authorative anymore since that version
 		$options = $self->_getconfig_idx5();
-	} elsif(open(CONFIG, "<$self->{'LIST_NAME'}/config")) { 
+	} elsif(open(CONFIG, "<" . $self->{LIST_NAME} . "/config")) { 
 		# 'config' contains the authorative information
 		while(<CONFIG>) {
 			if (/^F:-(\w+)/) {
@@ -238,10 +243,10 @@ sub thislist {
 # == Set the current mailing list ==
 sub setlist {
 	my($self, $list) = @_;
-	if ($list =~ m/^([\w\d\_\-\.\/]+)$/) {
+	if ($list =~ m/^([\w\d\_\-\.\/\@]+)$/) {
 		$list = $1;
 		if (-e "$list/lock") {
-          $self->_seterror(undef);
+			$self->_seterror(undef);
 			return $self->{'LIST_NAME'} = $list;
 		} else {
 			$self->_seterror(-1, "$list does not appear to be a valid list in setlist()");
@@ -547,7 +552,8 @@ sub set_lang {
 sub get_charset {
 	my ($self) = shift;
 	my $charset;
-	chomp($charset = $self->getpart('charset'));
+	$charset = $self->getpart('charset');
+	$charset = '' unless defined($charset);
 	# default if no 'charset' file exists
 	$charset = 'us-ascii' if ($charset eq '');
 	return $charset;
@@ -717,10 +723,13 @@ sub check_version {
 
 # == get the major ezmlm version ==
 # return values:
-#	0 => unknown version
-# 	3 => ezmlm v0.53
-# 	4 => ezmlm-idx v0.4*
-# 	5 => ezmlm-idx v5.*
+#	0	=> unknown version
+# 	3	=> ezmlm v0.53
+# 	4	=> ezmlm-idx v0.4*
+# 	5	=> ezmlm-idx v5.0
+# 	5.1	=> ezmlm-idx v5.1
+# 	6	=> ezmlm-idx v6.*
+# 	7	=> ezmlm-idx v7.*
 sub get_version {
 	my ($ezmlm, $idx);
 	my $version = `$EZMLM_BASE/ezmlm-make -V 2>&1`;
@@ -729,14 +738,22 @@ sub get_version {
 	$ezmlm = $1 if ($version =~ m/ezmlm-([\d\.]+)$/);
 	$idx = $1 if ($version =~ m/ezmlm-idx-([\d\.]+)$/);
 
-	if(defined($ezmlm)) {
+	if (defined($ezmlm)) {
 		return 3;
 	} elsif (defined($idx)) {
-		if (($idx =~ m/^(\d)/) && ($1 >= 5)) {
-			# version 5.0 or higher
+		if (($idx =~ m/^(\d)/) && ($1 >= 7)) {
+			# version 6.0 or higher
+			return 7;
+		} elsif (($idx =~ m/^(\d)/) && ($1 == 6)){
+		    return 6;
+		} elsif (($idx =~ m/^(\d)\.(\d)/) && ($1 >= 5) && ($2 == 1)) {
+			# version 5.1
+			return 5.1;
+		} elsif (($idx =~ m/^(\d)/) && ($1 >= 5)) {
+			# version 5.0
 			return 5;
 		} elsif (($idx =~ m/^0\.(\d)/) && ($1 >= 0)) {
-			# version 0.4 or higher
+			# version 0.4xx
 			return 4;
 		} else {
 			return 0;
@@ -813,25 +830,28 @@ sub _getconfig_idx5 {
 	chomp($options = $self->getpart('flags'));
 	# remove prefixed '-'
 	$options =~ s/^-//;
-   
+
 	# since ezmlm-idx v5, we have to read the config
 	# values from different files
 	# first: preset a array with "filename" and "option_number"
 	%optionfiles = (
-		'sublist', '0',
-		'fromheader', '3',
-		'tstdigopts', '4',
-		'owner', '5',
-		'sql', '6',
-		'modpost', '7',
-		'modsub', '8',
-		'remote', '9');
+		'sublist', 0,
+		'fromheader', 3,
+		'tstdigopts', 4,
+		'owner', 5,
+		'sql', 6,
+		'modpost', 7,
+		'modsub', 8,
+		'remote', 9);
 	while (($file, $opt_num) = each(%optionfiles)) {
 		if (-e "$self->{'LIST_NAME'}/$file") {
 			chomp($temp = $self->getpart($file));
 			$temp =~ m/^(.*)$/m;	# take only the first line
 			$temp = $1;
-			$options .= " -$opt_num '$temp'" if ($temp =~ /\S/);
+			# the 'owner' setting can be ignored if it is a path (starts with '/')
+			unless (($opt_num == 5) && ($temp =~ m#^/#)) {
+				$options .= " -$opt_num '$temp'" if ($temp =~ /\S/);
+			}
 		}
 	}
 
@@ -1132,10 +1152,13 @@ Empty strings for set_lang() and set_charset() reset the setting to its default 
    Mail::Ezmlm->get_version;
 
 The result is one of the following:
- 0 - unknown
- 3 - ezmlm 0.53
- 4 - ezmlm-idx 0.4xx
- 5 - ezmlm-idx 5.x
+ 0   - unknown
+ 3   - ezmlm 0.53
+ 4   - ezmlm-idx 0.4xx
+ 5   - ezmlm-idx 5.x
+ 5.1 - ezmlm-idx 5.1
+ 6   - ezmlm-idx 6.x
+ 7   - ezmlm-idx 7.x
 
 =head2 Creating MySQL tables:
 
