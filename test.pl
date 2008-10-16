@@ -31,6 +31,25 @@ print "Loading: ok 1\n";
 
 use Cwd;
 use File::Find;
+
+# we need to check, if ezmlm-idx is installed
+sub check_external_dependency {
+	my $ezmlm_bin = $Mail::Ezmlm::EZMLM_BASE . "/ezmlm-make";
+	if (-x $ezmlm_bin) {
+		return (0==0);
+	} else {
+		return (0==1);
+	}
+}
+
+if (!check_external_dependency()) {
+	# For humans:
+	warn "You don't have ezmlm-idx installed. Please fetch it from "
+			. "http://ezmlm.org/ and install it.";
+    # For the tester scripts:
+    exit 0;
+}
+
 $list = new Mail::Ezmlm;
 
 # create a temp directory if necessary
@@ -122,8 +141,10 @@ unless(@subscribers) {
 }
 
 print 'Testing installed version of ezmlm: ';
-my($version) = $list->check_version();
-if ($version) {
+my $version = $list->check_version();
+# "check_version" returns zero for a valid version and the version string for an
+# invalid version of ezmlm
+if ($version != 0) {
    $version =~ s/\n//;
    print 'not ok 9 [Warning: Ezmlm.pm is designed to work with ezmlm-idx > 0.40.  Your version reports as: ', $version, "]\n";
 } else {

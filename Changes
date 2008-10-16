@@ -57,5 +57,8 @@ Revision history for Perl extension Mail::Ezmlm.
    - add modules Mail::Ezmlm::GpgKeyRing and Mail::Ezmlm::GpgEzmlm
 
 0.08.1 Thu Oct  12 04:37:06 CEST 2008
-   - fix issue of Mail::Ezmlm::GpgEzmlm with ezmlm-idx v0.4x lists
+   - fixed issues of Mail::Ezmlm::GpgEzmlm with ezmlm-idx v0.4x lists
+
+0.08.2 Wed Oct 15 23:00:12 CEST 2008
+   - added check for external dependency to the test script
 

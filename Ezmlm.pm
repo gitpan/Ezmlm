@@ -1,6 +1,6 @@
 # ===========================================================================
-# Ezmlm.pm - version 0.08.1 - 10/12/2008
-# $Id: Ezmlm.pm 437 2008-10-12 02:45:27Z lars $
+# Ezmlm.pm - version 0.08.2 - 10/15/2008
+# $Id: Ezmlm.pm 453 2008-10-16 01:22:44Z lars $
 #
 # Object methods for ezmlm mailing lists
 #
@@ -53,7 +53,7 @@ require Exporter;
 @EXPORT = qw(
    
 );
-$VERSION = '0.08.1';
+$VERSION = '0.08.2';
 
 require 5.005;
 
@@ -708,6 +708,8 @@ sub errno {
 }
 
 # == Test the compatiblity of the module ==
+# return 0 for a valid version
+# return the version string for an invalid version
 sub check_version {
 	my $self = shift;
 	my $version = `$EZMLM_BASE/ezmlm-make -V 2>&1`;
